@@ -1,0 +1,6 @@
+{
+  "name": "BharatStock Blueprint",
+  "description": "A professional Indian stock price prediction tool with an architectural blueprint aesthetic. Uses multi-variable linear regression to forecast closing prices for major Indian companies like TCS, Reliance, and Infosys.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Manrope:wght@200;400;600;700;800&display=swap');
+
+@theme {
+  --font-manrope: "Manrope", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --color-accent-red: #ef233c;
+  --color-accent-red-glow: rgba(239, 35, 60, 0.5);
+}
+
+@layer base {
+  body {
+    @apply bg-black text-white font-inter selection:bg-accent-red selection:text-white overflow-x-hidden;
+  }
+
+  h1, h2, h3 {
+    @apply font-manrope font-semibold tracking-tight;
+  }
+}
+
+/* Custom Animations */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes border-spin {
+  from { --gradient-angle: 0deg; }
+  to { --gradient-angle: 360deg; }
+}
+
+@keyframes animStar {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-2000px); }
+}
+
+@property --gradient-angle { 
+  syntax: "<angle>"; 
+  initial-value: 0deg; 
+  inherits: false; 
+}
+
+.animate-fade-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+/* Shiny CTA Button */
+.shiny-cta {
+  --gradient-angle: 0deg;
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(#000000, #000000) padding-box,
+  conic-gradient(from var(--gradient-angle), transparent 0%, #ef233c 5%, #ef233c 15%, #ef233c 30%, transparent 40%, transparent 100%) border-box;
+  border: 2px solid transparent;
+  cursor: pointer;
+  isolation: isolate;
+  animation: border-spin 2.5s linear infinite;
+}
+
+.shiny-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, white 0.5px, transparent 0);
+  background-size: 4px 4px;
+  opacity: 0.1;
+  z-index: 0;
+}
+
+/* Parallax Stars */
+.stars-1 { box-shadow: 234px 124px #fff, 654px 345px #fff, 876px 12px #fff, 1200px 800px #fff, 400px 1500px #fff, 1800px 200px #fff, 100px 1000px #fff, 900px 1900px #fff, 500px 600px #fff, 1400px 100px #fff, 300px 400px #fff, 1600px 1200px #fff; }
+.stars-2 { box-shadow: 123px 456px #fff, 789px 234px #fff, 456px 890px #fff, 1100px 300px #fff, 200px 1200px #fff, 1500px 500px #fff, 600px 1700px #fff, 1300px 900px #fff; }
+
+.noir-card {
+  @apply bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all;
+}
+
+.text-stroke {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+  color: transparent;
+}
