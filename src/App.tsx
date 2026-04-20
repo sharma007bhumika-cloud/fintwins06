@@ -176,6 +176,29 @@ export default function App() {
         fill: true,
         tension: 0.4,
       },
+      {
+        label: 'Regression Trend',
+        data: (() => {
+          const prices = historicalData.map(d => d.close);
+          const n = prices.length;
+          if (n < 2) return prices;
+          let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+          for (let i = 0; i < n; i++) {
+            sumX += i;
+            sumY += prices[i];
+            sumXY += i * prices[i];
+            sumXX += i * i;
+          }
+          const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+          const intercept = (sumY - slope * sumX) / n;
+          return prices.map((_, i) => slope * i + intercept);
+        })(),
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderDash: [5, 5],
+        borderWidth: 1,
+        pointRadius: 0,
+        fill: false,
+      },
       ...(prediction ? [{
         label: 'Predicted Next Close',
         data: [...historicalData.map(() => null), prediction.predictedClose],
