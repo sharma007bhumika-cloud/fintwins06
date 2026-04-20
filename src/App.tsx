@@ -60,6 +60,7 @@ interface PredictionResponse {
   predictedClose: number;
   currency: string;
   timestamp: string;
+  targetDate: string;
 }
 
 export default function App() {
@@ -72,6 +73,7 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [advisory, setAdvisory] = useState<{ date: string; action: string; reason: string } | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -79,6 +81,12 @@ export default function App() {
     high: '',
     low: '',
     volume: ''
+  });
+
+  const [targetPredictionDate, setTargetPredictionDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
   });
 
   useEffect(() => {
@@ -120,6 +128,51 @@ export default function App() {
     fetchStockData();
   }, [selectedStock]);
 
+  useEffect(() => {
+    if (historicalData.length < 5) return;
+
+    // Calculate trend advisory
+    const prices = historicalData.map(d => d.close);
+    const n = prices.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += prices[i];
+      sumXY += i * prices[i];
+      sumXX += i * i;
+    }
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    
+    if (slope > 0) {
+      // Find a local dip in history or project next dip
+      const lastPrice = prices[n - 1];
+      const trendValue = slope * (n - 1) + (sumY - slope * sumX) / n;
+      
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      if (lastPrice < trendValue) {
+        setAdvisory({
+          date: 'ASAP',
+          action: 'Strong Buy',
+          reason: 'Price is currently below the structural growth trend.'
+        });
+      } else {
+        setAdvisory({
+          date: tomorrow.toISOString().split('T')[0],
+          action: 'Accumulate',
+          reason: 'Upward momentum confirmed. Buy on the next minor correction.'
+        });
+      }
+    } else {
+      setAdvisory({
+        date: 'Wait',
+        action: 'Neutral/Hold',
+        reason: 'Current structural trend is bearish. Await consolidation.'
+      });
+    }
+  }, [historicalData]);
+
   const handlePredict = async (e: React.FormEvent) => {
     e.preventDefault();
     setPredicting(true);
@@ -130,6 +183,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           symbol: selectedStock,
+          customTargetDate: targetPredictionDate,
           ...formData
         })
       });
@@ -164,7 +218,7 @@ export default function App() {
   };
 
   const chartData = {
-    labels: historicalData.map(d => d.date),
+    labels: [...historicalData.map(d => d.date), ...(prediction ? [prediction.targetDate] : [])],
     datasets: [
       {
         label: `${selectedStock} Closing Price`,
@@ -191,7 +245,18 @@ export default function App() {
           }
           const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
           const intercept = (sumY - slope * sumX) / n;
-          return prices.map((_, i) => slope * i + intercept);
+          // Include trend for the prediction point too
+          const result = prices.map((_, i) => slope * i + intercept);
+          if (prediction) {
+            // Calculate offset index
+            const now = new Date();
+            const target = new Date(prediction.targetDate);
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const targetStart = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+            const daysDiff = Math.ceil((targetStart - todayStart) / (1000 * 60 * 60 * 24));
+            result.push(slope * (n - 1 + daysDiff) + intercept);
+          }
+          return result;
         })(),
         borderColor: 'rgba(255, 255, 255, 0.3)',
         borderDash: [5, 5],
@@ -200,12 +265,11 @@ export default function App() {
         fill: false,
       },
       ...(prediction ? [{
-        label: 'Predicted Next Close',
+        label: 'Predicted Value',
         data: [...historicalData.map(() => null), prediction.predictedClose],
         borderColor: '#FFFFFF',
         backgroundColor: '#FFFFFF',
         pointRadius: 6,
-        pointStyle: 'circle',
         showLine: false,
       }] : [])
     ]
@@ -315,6 +379,20 @@ export default function App() {
                   </select>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex justify-between">
+                    Forecast Target Day
+                    <span className="text-zinc-700 italic lowercase font-normal">Estimates trend for distant dates</span>
+                  </label>
+                  <input 
+                    type="date"
+                    value={targetPredictionDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setTargetPredictionDate(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none text-white color-scheme-dark"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Open</label>
@@ -380,7 +458,10 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="noir-card border-accent-red/30 bg-accent-red/5"
                 >
-                  <div className="text-[10px] text-accent-red font-bold uppercase tracking-[0.2em] mb-2">Predicted Close</div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-[10px] text-accent-red font-bold uppercase tracking-[0.2em]">Predicted Close</div>
+                    <div className="text-[10px] text-zinc-500 font-mono">FOR: {prediction.targetDate}</div>
+                  </div>
                   <div className="text-4xl font-manrope font-bold text-white mb-4">
                     ₹ {prediction.predictedClose.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
@@ -400,6 +481,35 @@ export default function App() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {advisory && (
+              <div className="noir-card border-white/5 bg-white/[0.02]">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className={cn("w-4 h-4", advisory.action.includes('Buy') ? "text-green-500" : "text-zinc-500")} />
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Entry Strategy</h4>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Recommended Date</div>
+                    <div className="text-xl font-manrope font-semibold text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                      {advisory.date}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Action</div>
+                    <div className={cn(
+                      "text-xs font-bold px-2 py-0.5 rounded inline-block",
+                      advisory.action.includes('Buy') ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-white/5 text-zinc-400 border border-white/10"
+                    )}>
+                      {advisory.action}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed font-inter italic">
+                    " {advisory.reason} "
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-8">

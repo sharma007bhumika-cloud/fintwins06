@@ -64,7 +64,7 @@ async function startServer() {
   });
 
   app.post('/api/predict', (req, res) => {
-    const { symbol, open, high, low, volume } = req.body;
+    const { symbol, open, high, low, volume, customTargetDate } = req.body;
     
     if (!symbol || open === undefined || high === undefined || low === undefined || volume === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -72,21 +72,57 @@ async function startServer() {
 
     const historicalData = generateSimulatedData(symbol);
     
-    // Prepare training data
-    const X = historicalData.map(d => [d.open, d.high, d.low, d.volume]);
-    const y = historicalData.map(d => [d.close]);
+    // Multivariate model for standard short-term prediction
+    const X_multi = historicalData.map(d => [d.open, d.high, d.low, d.volume]);
+    const y_multi = historicalData.map(d => [d.close]);
+    const regressionMulti = new MultivariateLinearRegression(X_multi, y_multi);
+    const multiPrediction = regressionMulti.predict([Number(open), Number(high), Number(low), Number(volume)])[0];
 
-    // Train model
-    const regression = new MultivariateLinearRegression(X, y);
+    // Linear Trend model for any-day projection
+    const prices = historicalData.map(d => d.close);
+    const n = prices.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += prices[i];
+      sumXY += i * prices[i];
+      sumXX += i * i;
+    }
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Calculate Target Date and Days Offset
+    const now = new Date();
+    let targetDate = customTargetDate ? new Date(customTargetDate) : new Date();
     
-    // Predict
-    const prediction = regression.predict([Number(open), Number(high), Number(low), Number(volume)]);
+    if (!customTargetDate) {
+      targetDate.setDate(targetDate.getDate() + 1);
+      // Skip weekends for default next-day
+      if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() + 2);
+      else if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const daysDiff = Math.max(1, Math.ceil((targetStart - todayStart) / (1000 * 60 * 60 * 24)));
+
+    // If it's the immediate next market day, use the multivariate model (more accurate for market conditions)
+    // Otherwise, use the linear trend projection
+    let finalPrediction = 0;
+    if (daysDiff === 1) {
+      finalPrediction = multiPrediction;
+    } else {
+      // Index for target is current last index (n-1) + daysDiff
+      const targetIndex = (n - 1) + daysDiff;
+      finalPrediction = slope * targetIndex + intercept;
+    }
     
     res.json({
       symbol,
-      predictedClose: prediction[0],
+      predictedClose: finalPrediction,
       currency: 'INR',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      targetDate: targetDate.toISOString().split('T')[0]
     });
   });
 
