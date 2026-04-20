@@ -17,7 +17,27 @@ async function startServer() {
   // Simulated Data Generation for Indian Stocks
   const stocks = ['TCS', 'Reliance', 'Infosys', 'HDFC Bank', 'ICICI Bank', 'Wipro'];
   
+  // Seeded Random Helper (Mulberry32)
+  const seededRandom = (seed: number) => {
+    return () => {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  };
+
   const generateSimulatedData = (stockName: string) => {
+    // Generate a consistent seed based on stock name and current UTC date
+    const today = new Date().toISOString().split('T')[0];
+    const seedStr = `${stockName}-${today}`;
+    let seed = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      seed = ((seed << 5) - seed) + seedStr.charCodeAt(i);
+      seed |= 0;
+    }
+    
+    const rng = seededRandom(Math.abs(seed));
     const data = [];
     let basePrice = 0;
     switch(stockName) {
@@ -31,11 +51,13 @@ async function startServer() {
     }
 
     for (let i = 0; i < 30; i++) {
-      const open = basePrice + (Math.random() * 50 - 25);
-      const high = open + (Math.random() * 20);
-      const low = open - (Math.random() * 20);
-      const close = (high + low) / 2 + (Math.random() * 10 - 5);
-      const volume = Math.floor(Math.random() * 1000000) + 500000;
+      // Add a slight upward bias (0.5 to 1.5 units) to simulate typical market growth
+      const bias = 1.0; 
+      const open = basePrice + (rng() * 50 - 25) + bias;
+      const high = open + (rng() * 20);
+      const low = open - (rng() * 20);
+      const close = (high + low) / 2 + (rng() * 10 - 5);
+      const volume = Math.floor(rng() * 1000000) + 500000;
       
       data.push({
         date: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],

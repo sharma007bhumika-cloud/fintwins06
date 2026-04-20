@@ -143,7 +143,10 @@ export default function App() {
     }
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     
-    if (slope > 0) {
+    // Threshold for "Sideways" trend
+    const sidewaysThreshold = 0.5;
+
+    if (slope > sidewaysThreshold) {
       // Find a local dip in history or project next dip
       const lastPrice = prices[n - 1];
       const trendValue = slope * (n - 1) + (sumY - slope * sumX) / n;
@@ -151,24 +154,30 @@ export default function App() {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      if (lastPrice < trendValue) {
+      if (lastPrice < trendValue * 1.02) { // 2% cushion for buy signal
         setAdvisory({
           date: 'ASAP',
           action: 'Strong Buy',
-          reason: 'Price is currently below the structural growth trend.'
+          reason: 'Price is efficiently positioned relative to the upward structural trend.'
         });
       } else {
         setAdvisory({
           date: tomorrow.toISOString().split('T')[0],
           action: 'Accumulate',
-          reason: 'Upward momentum confirmed. Buy on the next minor correction.'
+          reason: 'Positive momentum detected. Ideal entry on the next minor 1-2% correction.'
         });
       }
+    } else if (slope >= -sidewaysThreshold) {
+      setAdvisory({
+        date: 'Anytime',
+        action: 'Accumulate (Sideways)',
+        reason: 'Stock is in consolidation. Good for long-term accumulation at these levels.'
+      });
     } else {
       setAdvisory({
         date: 'Wait',
-        action: 'Neutral/Hold',
-        reason: 'Current structural trend is bearish. Await consolidation.'
+        action: 'Wait/Correction',
+        reason: 'Current structural trend is undergoing correction. Await base formation.'
       });
     }
   }, [historicalData]);
@@ -499,7 +508,11 @@ export default function App() {
                     <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Action</div>
                     <div className={cn(
                       "text-xs font-bold px-2 py-0.5 rounded inline-block",
-                      advisory.action.includes('Buy') ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-white/5 text-zinc-400 border border-white/10"
+                      advisory.action.includes('Buy') || advisory.action.includes('Accumulate')
+                        ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                        : advisory.action.includes('Wait')
+                          ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                          : "bg-white/5 text-zinc-400 border border-white/10"
                     )}>
                       {advisory.action}
                     </div>
