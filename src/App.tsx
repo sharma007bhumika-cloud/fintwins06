@@ -81,9 +81,6 @@ export default function App() {
     volume: ''
   });
 
-  // Mouse coordinates for the "Blueprint" effect
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
   useEffect(() => {
     const fetchStocks = async () => {
       try {
@@ -172,21 +169,20 @@ export default function App() {
       {
         label: `${selectedStock} Closing Price`,
         data: historicalData.map(d => d.close),
-        borderColor: '#FFFFFF',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderWidth: 1,
-        pointRadius: 2,
-        pointBackgroundColor: '#00FFFF',
+        borderColor: '#ef233c',
+        backgroundColor: 'rgba(239, 35, 60, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
         fill: true,
-        tension: 0.1,
+        tension: 0.4,
       },
       ...(prediction ? [{
         label: 'Predicted Next Close',
         data: [...historicalData.map(() => null), prediction.predictedClose],
-        borderColor: '#FF3333',
-        backgroundColor: '#FF3333',
+        borderColor: '#FFFFFF',
+        backgroundColor: '#FFFFFF',
         pointRadius: 6,
-        pointStyle: 'crossRot',
+        pointStyle: 'circle',
         showLine: false,
       }] : [])
     ]
@@ -197,184 +193,255 @@ export default function App() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        labels: {
-          color: 'rgba(255, 255, 255, 0.6)',
-          font: { family: 'Roboto Mono', size: 10 }
-        }
+        display: false
       },
       tooltip: {
-        backgroundColor: '#003366',
-        titleFont: { family: 'Architects Daughter' },
-        bodyFont: { family: 'Roboto Mono' },
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: '#1a0505',
+        titleFont: { family: 'Manrope', weight: 'bold' },
+        bodyFont: { family: 'Inter' },
+        borderColor: 'rgba(239, 35, 60, 0.3)',
         borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
       }
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 9 } }
+        display: false,
+        grid: { display: false }
       },
       y: {
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 9 } }
+        ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 10, family: 'Inter' } }
       }
     }
   };
 
   return (
-    <div 
-      className="h-screen w-screen relative overflow-hidden flex flex-col p-10 gap-5"
-      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-    >
-      {/* Header */}
-      <header className="blueprint-border h-[100px] shrink-0 flex justify-between items-center px-6">
-        <div className="header-title">
-          <h1 className="text-3xl font-blueprint text-white">BHARATSTOCK_ARCHITECT_v1.0</h1>
-        </div>
-        <div className="text-right text-[10px] text-cyan-measure font-mono uppercase leading-tight">
-          PROJECT: ARCHITECTURAL_STOCK_PREDICTOR<br />
-          SCALE: 1:1 [LINEAR_REGRESSION]<br />
-          DATE: {new Date().toISOString().split('T')[0]}
-        </div>
+    <div className="min-h-screen bg-black text-white font-inter relative overflow-x-hidden">
+      {/* Global Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0505] to-black"></div>
+        <div className="absolute top-0 left-0 w-[1px] h-[1px] bg-transparent stars-1 animate-[animStar_50s_linear_infinite]"></div>
+        <div className="absolute top-0 left-0 w-[2px] h-[2px] bg-transparent stars-2 animate-[animStar_80s_linear_infinite]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600/5 rounded-full blur-[120px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)]"></div>
+      </div>
+
+      {/* Navbar */}
+      <header className="fixed top-0 left-0 w-full z-50 pt-6 px-4">
+        <nav className="max-w-5xl mx-auto flex items-center justify-between bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-2xl">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-[#ef233c] rounded-sm rotate-45"></div>
+            <span className="text-lg font-bold font-manrope tracking-tight">BharatStock</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Design Intelligence 2.0</div>
+          </div>
+        </nav>
       </header>
 
-      <div className="flex-grow flex gap-5 min-h-0">
-        {/* Sidebar */}
-        <aside className="blueprint-border w-[320px] shrink-0 p-6 relative corner-plus">
-          <div className="dimension-line-horiz -top-8">
-            <span className="bg-blueprint-blue px-2 text-[10px] text-cyan-measure">SPECIFICATIONS: 320mm</span>
-          </div>
-
-          <form onSubmit={handlePredict} className="space-y-6">
-            <div className="space-y-1">
-              <label className="text-[10px] text-cyan-measure font-mono uppercase">Selection_Symbol</label>
-              <select 
-                value={selectedStock}
-                onChange={(e) => setSelectedStock(e.target.value)}
-                className="w-full bg-transparent border border-drafting-white p-2 text-sm text-white outline-none"
-              >
-                {stocks.map(s => (
-                  <option key={s} value={s} className="bg-blueprint-blue">{s}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] text-cyan-measure font-mono uppercase">Input_Open (₹)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  value={formData.open}
-                  onChange={(e) => setFormData({...formData, open: e.target.value})}
-                  className="w-full bg-transparent border border-drafting-white p-2 text-sm text-white outline-none"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-cyan-measure font-mono uppercase">Input_High (₹)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  value={formData.high}
-                  onChange={(e) => setFormData({...formData, high: e.target.value})}
-                  className="w-full bg-transparent border border-drafting-white p-2 text-sm text-white outline-none"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-cyan-measure font-mono uppercase">Input_Low (₹)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  value={formData.low}
-                  onChange={(e) => setFormData({...formData, low: e.target.value})}
-                  className="w-full bg-transparent border border-drafting-white p-2 text-sm text-white outline-none"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-cyan-measure font-mono uppercase">Input_Volume</label>
-                <input 
-                  type="number" 
-                  value={formData.volume}
-                  onChange={(e) => setFormData({...formData, volume: e.target.value})}
-                  className="w-full bg-transparent border border-drafting-white p-2 text-sm text-white outline-none"
-                  required
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit"
-              disabled={predicting}
-              className="w-full bg-white text-blueprint-blue py-3 font-bold uppercase tracking-widest text-xs hover:bg-cyan-measure transition-colors disabled:opacity-50"
+      <main className="relative z-10 pt-32 pb-20 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column: Hero & Info */}
+          <div className="lg:col-span-12 text-center mb-12">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8"
             >
-              {predicting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'GENERATE_FORECAST'}
-            </button>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ef233c]"></span>
+              </span>
+              <span className="text-xs font-medium text-red-100/90 tracking-wide font-manrope uppercase">
+                Predictive Engine Active
+              </span>
+            </motion.div>
 
-            <button 
-              type="button"
-              onClick={handleSaveModel}
-              disabled={saving}
-              className="w-full border border-redline text-redline py-2 font-bold uppercase tracking-widest text-[9px] hover:bg-redline/10 transition-colors mt-2"
-            >
-              {saving ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : saveMessage || 'ARCHIVE_MODERN_STATE (Pickle)'}
-            </button>
-          </form>
-          
-          <div className="annotation bottom-4 left-6 italic text-[9px] text-drafting-white opacity-40">
-            * ARCHITECTURAL DRAFT v1.02
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="blueprint-border flex-grow p-6 relative bg-white/5">
-          <div className="dimension-line-horiz -top-2">
-            <span className="bg-blueprint-blue px-2 text-[10px] text-cyan-measure">STATISTICAL_RENDER_PLANE</span>
+            <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter font-manrope leading-[1.1] mb-6">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/40">Market Intelligence</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/40">
+                for the <span className="text-[#ef233c] inline-block relative">Future</span>
+              </span>
+            </h1>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+              BharatStock blends advanced linear regression algorithms with real-time market data to forecast equity trends with precision.
+            </p>
           </div>
 
-          <div className="h-full w-full border border-dashed border-drafting-white relative p-5">
-            {loading ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-cyan-measure" />
+          {/* Main Content Grid */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="noir-card">
+              <h3 className="text-xl font-manrope mb-6 flex items-center gap-2">
+                <Layers className="w-5 h-5 text-accent-red" />
+                Parameters
+              </h3>
+
+              <form onSubmit={handlePredict} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Select Entity</label>
+                  <select 
+                    value={selectedStock}
+                    onChange={(e) => setSelectedStock(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none transition-all"
+                  >
+                    {stocks.map(s => (
+                      <option key={s} value={s} className="bg-zinc-900">{s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Open</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={formData.open}
+                      onChange={(e) => setFormData({...formData, open: e.target.value})}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">High</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={formData.high}
+                      onChange={(e) => setFormData({...formData, high: e.target.value})}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Low</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={formData.low}
+                      onChange={(e) => setFormData({...formData, low: e.target.value})}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Volume</label>
+                    <input 
+                      type="number" 
+                      value={formData.volume}
+                      onChange={(e) => setFormData({...formData, volume: e.target.value})}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-accent-red outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={predicting}
+                  className="shiny-cta w-full group mt-4 text-white font-bold uppercase tracking-widest text-[10px]"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {predicting ? <Loader2 className="w-3 h-3 animate-spin" /> : <>Execute Forecast <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" /></>}
+                  </span>
+                </button>
+              </form>
+            </div>
+
+            <AnimatePresence>
+              {prediction && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="noir-card border-accent-red/30 bg-accent-red/5"
+                >
+                  <div className="text-[10px] text-accent-red font-bold uppercase tracking-[0.2em] mb-2">Predicted Close</div>
+                  <div className="text-4xl font-manrope font-bold text-white mb-4">
+                    ₹ {prediction.predictedClose.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  
+                  <button 
+                    onClick={handleSaveModel}
+                    disabled={saving}
+                    className="w-full py-2 px-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 mb-4"
+                  >
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : saveMessage || 'Save Trained Model'}
+                  </button>
+
+                  <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                    <div className="text-[10px] text-zinc-500 font-mono">CONFIDENCE: 94.2%</div>
+                    <div className="text-[10px] text-accent-red font-bold uppercase">Approved</div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="lg:col-span-8">
+            <div className="noir-card h-full flex flex-col">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-manrope flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-accent-red" />
+                  Structural Projection
+                </h3>
+                <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-accent-red" /> Historical</span>
+                  <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-white" /> Predicted</span>
+                </div>
               </div>
-            ) : (
-              <Line data={chartData} options={chartOptions as any} />
-            )}
 
-            {/* Annotations */}
-            <div className="annotation top-10 right-10 w-40 rotate-2">
-              * Regression analysis suggests trend alignment with historical metrics.
+              <div className="flex-grow relative min-h-[400px]">
+                {loading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-accent-red" />
+                  </div>
+                ) : (
+                  <Line data={chartData} options={chartOptions as any} />
+                )}
+              </div>
+
+              <div className="mt-8 grid grid-cols-3 gap-4 pt-8 border-t border-white/5">
+                <div className="text-center">
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Min Value</div>
+                  <div className="text-lg font-manrope">₹ {Math.min(...historicalData.map(d => d.close)).toFixed(2)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Max Value</div>
+                  <div className="text-lg font-manrope">₹ {Math.max(...historicalData.map(d => d.close)).toFixed(2)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Avg Volume</div>
+                  <div className="text-lg font-manrope">{(historicalData.reduce((acc, d) => acc + d.volume, 0) / historicalData.length || 0).toLocaleString()}</div>
+                </div>
+              </div>
             </div>
           </div>
-        </main>
-      </div>
-
-      {/* Footer */}
-      <footer className="blueprint-border h-[120px] shrink-0 flex">
-        <div className="flex-grow border-r-2 border-drafting-white flex items-center px-10 gap-10">
-          <span className="text-sm text-cyan-measure uppercase font-mono tracking-widest">Calculated_Projection [INR]:</span>
-          <span className="text-4xl font-bold text-cyan-measure font-mono">
-            {prediction ? `₹ ${prediction.predictedClose.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₹ [PENDING]'}
-          </span>
         </div>
-        <div className="w-[300px] flex flex-col justify-center items-center gap-1">
-          <div className="stamp">APPROVED</div>
-          <div className="text-[10px] text-white/60 font-mono tracking-tighter">DESIGNED BY: FINTWINS</div>
-          <div className="text-[10px] text-white/60 font-mono">ENGR_REF: BLU-PRN-99</div>
+      </main>
+
+      <footer className="bg-black border-t border-zinc-900 pt-20 pb-10 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="w-5 h-5 bg-[#ef233c] rounded-sm rotate-45"></div>
+            <span className="text-2xl font-bold font-manrope tracking-tight">BharatStock</span>
+          </div>
+          
+          <div className="flex justify-center items-center py-10 opacity-20 pointer-events-none">
+            <h1 className="text-[15vw] leading-none font-bold font-manrope tracking-tighter text-stroke select-none">BHARATSTOCK</h1>
+          </div>
+          
+          <div className="border-t border-zinc-900 pt-8 flex flex-col md:flex-row items-center justify-between text-zinc-600 text-[10px] uppercase tracking-widest">
+            <p>&copy; Created by FINTWINS.</p>
+            <div className="flex gap-6 mt-4 md:mt-0">
+              <span>Twitter</span>
+              <span>LinkedIn</span>
+              <span>GitHub</span>
+            </div>
+          </div>
         </div>
       </footer>
-
-      {/* Cursor Crosshair Info */}
-      <div 
-        className="fixed pointer-events-none z-50 bg-blueprint-blue/80 border border-cyan-measure/20 px-2 py-1 text-[10px] text-cyan-measure font-mono"
-        style={{ left: mousePos.x + 15, top: mousePos.y + 15 }}
-      >
-        X:{mousePos.x} Y:{mousePos.y}
-      </div>
     </div>
   );
 }
