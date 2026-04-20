@@ -6,7 +6,7 @@
   "type": "module",
   "optionalDependencies": {
   "fsevents": "*"
-}
+},
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
