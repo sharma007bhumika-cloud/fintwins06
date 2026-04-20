@@ -1,3 +1,6 @@
+"optionalDependencies": {
+  "fsevents": "*"
+}
 {
   "name": "react-example",
   "private": true,
